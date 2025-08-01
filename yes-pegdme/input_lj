@@ -1,0 +1,66 @@
+# newton off #for gpu
+# package gpu force/neigh 0 0 1 #for gpu
+# package  gpu 1 newton off neigh yes 
+
+variable 	prun equal  10000000 
+variable 	pdump equal 1000000
+
+units		lj
+atom_style	full 
+dimension	3
+special_bonds 	fene dihedral no 
+
+neighbor	0.3 bin 
+neigh_modify	every 1 delay 10 check yes
+
+boundary 	p p p
+
+#Bond (fene)
+bond_style 	fene 
+angle_style 	harmonic 
+pair_style	lj/cut 2.5 
+
+read_data  	../lj4/restart.dat 
+
+group 		Cmma type 1
+group  		BackOmma type 2 
+group  		SideOmma type 3 
+group  		Cvc type 4 
+group  		Ovc type 5 
+group  		Cpeg type 6 
+group  		Opeg type 7 
+
+bond_coeff 	1 30.0 1.5 1.0 1.0
+bond_coeff 	2 30.0 1.5 1.0 1.0
+bond_coeff 	3 30.0 1.5 1.0 1.0
+angle_coeff 	1 300.0 60.0 
+
+pair_coeff      * * 1.0 1.0 1.12 
+pair_coeff 	1 2*3 0.5 1.0 2.5 
+pair_coeff 	4 5 0.5 1.0 2.5 
+pair_coeff      3 5 1.2 1.0 1.12 
+#with pegdme  
+pair_coeff	1 6 0.6 1.0 2.5 
+pair_coeff	4 6 0.6 1.0 2.5 
+pair_coeff	2 7 1.2 1.0 2.5 
+pair_coeff	5 7 1.2 1.0 2.5 
+ 
+pair_modify 	shift yes mix geometric 
+
+change_box      all x final 0.0 90.0 y final 0.0 90.0 z final 0.0 90.0 boundary p p p remap units box
+
+fix             1 all nve/limit 0.1
+fix             2 all langevin 1.0 1.0 1.0 904297
+
+thermo          1000 
+thermo_style    custom step temp epair emol etotal press  
+thermo_modify 	norm yes flush yes 
+
+reset_timestep 	0
+timestep 	0.01 
+
+dump  		1 all xyz ${pdump} dump.xyz  
+# restart  	${pdump} comp.restart1 comp.restart2
+run  		${prun}
+write_data 	restart.dat
+
